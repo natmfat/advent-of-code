@@ -1,9 +1,9 @@
-// a max heap I guess?
-
+#[derive(Debug)]
 pub struct Heap {
-    values: Vec<i32>,
+    pub values: Vec<i32>,
 }
 
+// implementation of a max heap
 impl Heap {
     pub fn new() -> Heap {
         return Heap { values: Vec::new() };
@@ -24,33 +24,35 @@ impl Heap {
             return Some(top);
         }
 
-        // move last to top
-        let last_value = self.values.pop().unwrap();
-        self.values[0] = last_value;
-
-        // bubble down top value
+        // move last to top & bubble down top value
+        self.values[0] = self.values.pop().unwrap().clone();
         let mut idx: usize = 0;
         let len = self.values.len();
         while idx < len {
-            let left_child_idx = Heap::get_left_child_idx(idx);
+            let left_child_idx: usize = Heap::get_left_child_idx(idx);
             let right_child_idx = Heap::get_right_child_idx(idx);
             let mut largest_child_idx = idx;
 
-            if left_child_idx < len && self.values[left_child_idx] > self.values[largest_child_idx]
+            if left_child_idx < len
+                && self.values.get(left_child_idx).unwrap()
+                    > self.values.get(largest_child_idx).unwrap()
             {
                 largest_child_idx = left_child_idx;
-            } else if right_child_idx < len
-                && self.values[right_child_idx] > self.values[largest_child_idx]
+            }
+
+            if right_child_idx < len
+                && self.values.get(right_child_idx).unwrap()
+                    > self.values.get(largest_child_idx).unwrap()
             {
                 largest_child_idx = right_child_idx;
             }
 
             if largest_child_idx == idx {
                 break;
+            } else {
+                self.values.swap(idx, largest_child_idx);
+                idx = largest_child_idx;
             }
-
-            self.values.swap(idx, largest_child_idx);
-            idx = largest_child_idx;
         }
 
         return Some(top);
@@ -58,12 +60,14 @@ impl Heap {
 
     pub fn push(&mut self, value: i32) {
         self.values.push(value);
+
         let mut idx = self.values.len() - 1;
         if idx == 0 {
             return;
         }
+
         while idx > 0 {
-            let parent_idx = Heap::get_parent_idx(idx);
+            let parent_idx: usize = Heap::get_parent_idx(idx);
             if value
                 > self
                     .values
