@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 pub fn part1() {
   // convert input into a 2d grid of cells
   let mut grid = Grid::new(
@@ -9,67 +11,110 @@ pub fn part1() {
   );
 
   // locate guard
-  let mut pos = Vector { x: 0, y: 0 };
+  let mut initial_pos = Vector { x: 0, y: 0 };
   for y in 0..grid.height() {
     for x in 0..grid.width() {
       if grid.get(x, y).expect("expected grid value") == '^' {
-        pos.x = x as i32;
-        pos.y = y as i32;
+        initial_pos.x = x as i32;
+        initial_pos.y = y as i32;
       }
     }
   }
 
-  // run guard routine, marking visited squares with an X
-  let mut vel = Vector { x: 0, y: -1 };
-  loop {
-    // visit current location
-    grid.visit(&pos);
+  let initial_grid = grid.clone();
 
-    // peak next square, if obstacle, change vel
-    match grid.get_vec(pos.clone().add(&vel)) {
-      Some('#') => vel = change_dir(&vel),
-      None => break,
-      _ => (),
-    }
+  // part 1
+  grid.cycle(&mut initial_pos.clone());
+  println!("{}", grid.visited.len());
 
-    // otherwise move
-    pos.add(&vel);
-  }
-
-  // println!("{}", grid.to_string());
-  println!("{}", grid.visited);
-
-  // when guard leaves, we stop
-}
-
-fn change_dir(vel: &Vector) -> Vector {
-  let cycle = vec![
-    Vector::new(0, -1),
-    Vector::new(1, 0),
-    Vector::new(0, 1),
-    Vector::new(-1, 0),
-  ];
-  for i in 0..cycle.len() {
-    if cycle.get(i).expect("expected to get a vector").equals(vel) {
-      return cycle
-        .get((i + 1) % cycle.len())
-        .expect("where is the next vector???")
-        .clone();
-    }
-  }
-
-  panic!("vel vector must be invalid");
+  // part 2
+  let counter: i32 = grid
+    .visited
+    .par_iter()
+    .map(|pos| {
+      let mut grid = initial_grid.clone();
+      grid.set(pos.x, pos.y, 'O');
+      if grid.cycle(&mut initial_pos.clone()) {
+        return 1;
+      }
+      return 0;
+    })
+    .sum();
+  println!("{}", counter);
 }
 
 #[derive(Debug)]
 struct Grid {
-  visited: i32,
+  already_visited: i32,
+  visited: Vec<Vector>,
   values: Vec<Vec<char>>,
 }
 
 impl Grid {
   fn new(values: Vec<Vec<char>>) -> Grid {
-    return Grid { visited: 0, values };
+    return Grid {
+      already_visited: 0,
+      visited: Vec::new(),
+      values,
+    };
+  }
+
+  fn clone(&self) -> Grid {
+    return Grid {
+      already_visited: self.already_visited.clone(),
+      visited: self.visited.clone(),
+      values: self
+        .values
+        .iter()
+        .map(|row| row.clone())
+        .clone()
+        .collect::<Vec<Vec<char>>>(),
+    };
+  }
+
+  /// run guard routine, marking visited squares with an X
+  fn cycle(&mut self, initial_pos: &mut Vector) -> bool {
+    let mut vel = Vector { x: 0, y: -1 };
+    let mut pos = initial_pos.clone();
+    loop {
+      // visit current location
+      self.visit(&pos);
+
+      // peak next square, if obstacle, change vel
+      match self.get_vec(pos.clone().add(&vel)) {
+        Some('#') => vel = Grid::change_dir(&vel),
+        Some('O') => vel = Grid::change_dir(&vel),
+        // when guard leaves, we stop
+        None => return false,
+        _ => (),
+      }
+
+      if self.already_visited >= (self.visited.len() as i32) {
+        return true;
+      }
+
+      // otherwise move
+      pos.add(&vel);
+    }
+  }
+
+  fn change_dir(vel: &Vector) -> Vector {
+    let cycle = vec![
+      Vector::new(0, -1),
+      Vector::new(1, 0),
+      Vector::new(0, 1),
+      Vector::new(-1, 0),
+    ];
+    for i in 0..cycle.len() {
+      if cycle.get(i).expect("expected to get a vector").equals(vel) {
+        return cycle
+          .get((i + 1) % cycle.len())
+          .expect("where is the next vector???")
+          .clone();
+      }
+    }
+
+    panic!("vel vector must be invalid");
   }
 
   fn within_bounds(&self, x: i32, y: i32) -> bool {
@@ -89,8 +134,10 @@ impl Grid {
   fn visit(&mut self, pos: &Vector) {
     let prev = self.get_vec(pos);
     self.set(pos.x, pos.y, 'X');
-    if prev != Some('X') {
-      self.visited += 1;
+    if prev == Some('X') {
+      self.already_visited += 1;
+    } else {
+      self.visited.push(pos.clone());
     }
   }
 
@@ -135,7 +182,7 @@ impl Grid {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Vector {
   x: i32,
   y: i32,
@@ -144,10 +191,6 @@ struct Vector {
 impl Vector {
   pub fn new(x: i32, y: i32) -> Vector {
     return Vector { x, y };
-  }
-
-  pub fn clone(&self) -> Vector {
-    return Vector::new(self.x, self.y);
   }
 
   pub fn add(&mut self, vector: &Vector) -> &mut Vector {

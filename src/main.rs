@@ -9,4 +9,5 @@ fn main() {
   // solutions::day2::part2();
 
   solutions::day6::part1();
+  // solutions::day6::part2();
 }
