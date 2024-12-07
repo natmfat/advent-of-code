@@ -5,7 +5,10 @@ fn main() {
       .to_string(),
   );
 
-  println!("part 1 = {}", language.core());
+  println!("part 1 = {}", language.core(true));
+
+  language.reset();
+  println!("part 2 = {}", language.core(false));
 }
 
 struct Language {
@@ -17,6 +20,10 @@ impl Language {
   fn new(raw: String) -> Language {
     let tokens = raw.chars().collect::<Vec<char>>();
     return Language { pos: 0, tokens };
+  }
+
+  fn reset(&mut self) {
+    self.pos = 0;
   }
 
   fn get(&self, idx: usize) -> Option<char> {
@@ -62,14 +69,20 @@ impl Language {
     return number.parse::<i32>().expect("expected to parse number");
   }
 
-  fn core(&mut self) -> i32 {
+  fn core(&mut self, always_enabled: bool) -> i32 {
     let mut result = 0;
+    let mut enabled = true;
+
     while self.pos < self.tokens.len() {
-      if self.matches(vec!['m', 'u', 'l', '(']) {
+      if self.matches(vec!['d', 'o', 'n', '\'', 't', '(', ')']) {
+        enabled = false;
+      } else if self.matches(vec!['d', 'o', '(', ')']) {
+        enabled = true;
+      } else if self.matches(vec!['m', 'u', 'l', '(']) {
         let a = self.extract_numeric();
         if self.matches(vec![',']) {
           let b = self.extract_numeric();
-          if self.matches(vec![')']) {
+          if self.matches(vec![')']) && (enabled || always_enabled) {
             result += a * b;
           }
         }
