@@ -82,11 +82,21 @@ impl Grid {
 
       // peak next square, if obstacle, change vel
       match self.get_vec(pos.clone().add(&vel)) {
-        Some('#') => vel = Grid::change_dir(&vel),
-        Some('O') => vel = Grid::change_dir(&vel),
-        // when guard leaves, we stop
+        Some('#') => vel = Grid::turn(&vel),
+        Some('O') => vel = Grid::turn(&vel),
+        // when guard leaves, we stop (also cannot loop)
         None => return false,
-        _ => (),
+        _ => {}
+      }
+
+      // https://www.reddit.com/r/adventofcode/comments/1h7uff2/comment/m0p7pxl/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+      // you may have to turn again
+      match self.get_vec(pos.clone().add(&vel)) {
+        Some('#') => vel = Grid::turn(&vel),
+        Some('O') => vel = Grid::turn(&vel),
+        // when guard leaves, we stop (also cannot loop)
+        None => return false,
+        _ => {}
       }
 
       if self.already_visited >= (self.visited.len() as i32) {
@@ -98,7 +108,7 @@ impl Grid {
     }
   }
 
-  fn change_dir(vel: &Vector) -> Vector {
+  fn turn(vel: &Vector) -> Vector {
     let cycle = vec![
       Vector::new(0, -1),
       Vector::new(1, 0),
@@ -132,11 +142,11 @@ impl Grid {
   }
 
   fn visit(&mut self, pos: &Vector) {
-    let prev = self.get_vec(pos);
-    self.set(pos.x, pos.y, 'X');
-    if prev == Some('X') {
+    let current = self.get_vec(pos);
+    if current == Some('X') {
       self.already_visited += 1;
     } else {
+      self.set(pos.x, pos.y, 'X');
       self.visited.push(pos.clone());
     }
   }
