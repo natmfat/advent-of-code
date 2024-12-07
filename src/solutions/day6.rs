@@ -1,5 +1,9 @@
 use rayon::prelude::*;
 
+const OBSTACLE: char = '#';
+const VISITED: char = 'X';
+const GUARD: char = '^';
+
 pub fn part1() {
   // convert input into a 2d grid of cells
   let mut grid = Grid::new(
@@ -14,7 +18,7 @@ pub fn part1() {
   let mut initial_pos = Vector { x: 0, y: 0 };
   for y in 0..grid.height() {
     for x in 0..grid.width() {
-      if grid.get(x, y).expect("expected grid value") == '^' {
+      if grid.get(x, y).expect("expected grid value") == GUARD {
         initial_pos.x = x as i32;
         initial_pos.y = y as i32;
       }
@@ -33,7 +37,7 @@ pub fn part1() {
     .par_iter()
     .map(|pos| {
       let mut grid = initial_grid.clone();
-      grid.set(pos.x, pos.y, 'O');
+      grid.set(pos.x, pos.y, OBSTACLE);
       if grid.cycle(&mut initial_pos.clone()) {
         return 1;
       }
@@ -80,25 +84,20 @@ impl Grid {
       // visit current location
       self.visit(&pos);
 
-      // peak next square, if obstacle, change vel
-      match self.get_vec(pos.clone().add(&vel)) {
-        Some('#') => vel = Grid::turn(&vel),
-        Some('O') => vel = Grid::turn(&vel),
-        // when guard leaves, we stop (also cannot loop)
-        None => return false,
-        _ => {}
+      if self.get_vec(&pos) == None {
+        return false;
       }
 
+      // peak next square, if obstacle, turn
+      // keep turning until we aren't facing an obstacle
       // https://www.reddit.com/r/adventofcode/comments/1h7uff2/comment/m0p7pxl/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-      // you may have to turn again
-      match self.get_vec(pos.clone().add(&vel)) {
-        Some('#') => vel = Grid::turn(&vel),
-        Some('O') => vel = Grid::turn(&vel),
-        // when guard leaves, we stop (also cannot loop)
-        None => return false,
-        _ => {}
+      while self.get_vec(pos.clone().add(&vel)) == Some(OBSTACLE) {
+        vel = Grid::turn(&vel)
       }
 
+      // idk if this is actually accurate
+      // conceivably, a path with a lot of intersections would increment already visited...
+      // perhaps x2 would be safer?
       if self.already_visited >= (self.visited.len() as i32) {
         return true;
       }
@@ -143,10 +142,10 @@ impl Grid {
 
   fn visit(&mut self, pos: &Vector) {
     let current = self.get_vec(pos);
-    if current == Some('X') {
+    if current == Some(VISITED) {
       self.already_visited += 1;
     } else {
-      self.set(pos.x, pos.y, 'X');
+      self.set(pos.x, pos.y, VISITED);
       self.visited.push(pos.clone());
     }
   }
