@@ -13,9 +13,6 @@ fn main() {
   println!("part 2 = {}", grid.find_x());
 }
 
-/// list of characters to find
-const XMAS: [char; 4] = ['X', 'M', 'A', 'S'];
-
 struct Grid {
   values: Vec<Vec<char>>,
 }
