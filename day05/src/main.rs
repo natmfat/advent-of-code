@@ -110,6 +110,7 @@ fn is_valid(ordering: &HashMap<i32, Vec<i32>>, update: &Vec<i32>) -> bool {
         }
       }
     } else {
+      // nothing is valid after, so we know current should actually be at the END of the update list
       return false;
     }
   }
