@@ -1,13 +1,13 @@
-use rayon::prelude::*;
+use rayon::prelude::*; // so I can pretend I know parallel computing
 
 const OBSTACLE: char = '#';
 const VISITED: char = 'X';
 const GUARD: char = '^';
 
-pub fn part1() {
+fn main() {
   // convert input into a 2d grid of cells
   let mut grid = Grid::new(
-    std::fs::read_to_string("./inputs/day6-part1.txt")
+    std::fs::read_to_string("./input.txt")
       .expect("please provide day 6 input")
       .lines()
       .map(|line| line.chars().collect())
@@ -29,7 +29,7 @@ pub fn part1() {
 
   // part 1
   grid.cycle(&mut initial_pos.clone());
-  println!("{}", grid.visited.len());
+  println!("part 1 = {}", grid.visited.len());
 
   // part 2
   let counter: i32 = grid
@@ -44,7 +44,7 @@ pub fn part1() {
       return 0;
     })
     .sum();
-  println!("{}", counter);
+  println!("part 2 = {}", counter);
 }
 
 #[derive(Debug)]

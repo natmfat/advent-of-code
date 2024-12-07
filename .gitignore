@@ -1,5 +1,5 @@
-/target
-/inputs
+target/
+**/input.txt
 
 # for psuedo code/testing
 main.py

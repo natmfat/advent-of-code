@@ -1,33 +1,24 @@
-use std::fs::read_to_string;
-
-pub fn part1() {
-  let mut safe = 0;
-  for line in read_to_string("./inputs/day2-part1.txt")
-    .expect("day2 inputs should be provided")
-    .lines()
-  {
-    if is_safe(line.split_whitespace().collect(), 0) {
-      safe += 1;
-    }
-  }
-  println!("{safe}");
+fn main() {
+  println!("part 1 = {}", part(0));
+  println!("part 2 = {}", part(1));
 }
 
-pub fn part2() {
+pub fn part(tolerance: u32) -> i32{
   let mut safe = 0;
-  for line in read_to_string("./inputs/day2-part1.txt")
+  for line in std::fs::read_to_string("./input.txt")
     .expect("day2 inputs should be provided")
     .lines()
   {
-    if is_safe(line.split_whitespace().collect(), 1) {
+    if is_safe(line.split_whitespace().collect(), tolerance) {
       safe += 1;
     }
   }
-  println!("{safe}");
+
+  return safe;
 }
 
 /// determine if a line is "safe" (monotonic & within a range)
-fn is_safe(components: Vec<&str>, tolerance: i32) -> bool {
+fn is_safe(components: Vec<&str>, tolerance: u32) -> bool {
   let parsed_components = components
     .iter()
     .map(|&x| x.parse::<i32>().expect("parse string into int"))
