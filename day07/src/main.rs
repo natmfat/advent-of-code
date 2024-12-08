@@ -4,17 +4,29 @@ fn main() {
   let input = std::fs::read_to_string("./input.txt").expect("expected input data");
   let lines: Vec<Calibration> = input.lines().map(Calibration::from).collect();
 
-  let solution: i64 = lines
+  let p1: i64 = lines
     .par_iter()
     .map(|calibration| {
-      if calibration.compute() {
+      if calibration.compute(false) {
         return calibration.solution;
       }
       return 0;
     })
     .sum();
 
-  println!("part 2 = {}", solution);
+  println!("part 1 = {}", p1);
+
+  let p2: i64 = lines
+    .par_iter()
+    .map(|calibration| {
+      if calibration.compute(true) {
+        return calibration.solution;
+      }
+      return 0;
+    })
+    .sum();
+
+  println!("part 2 = {}", p2);
 }
 
 #[derive(Debug)]
@@ -40,7 +52,7 @@ impl Calibration {
   }
 
   // compute addition
-  fn compute(&self) -> bool {
+  fn compute(&self, use_concat: bool) -> bool {
     let mut equation_stack: Vec<Vec<i64>> = vec![self.equation.clone()];
     while equation_stack.len() > 0 {
       if let Some(equation) = equation_stack.pop() {
@@ -65,8 +77,10 @@ impl Calibration {
               .expect("equation should have a single value");
             equation_stack.push([vec![a + b], equation[2..].to_vec()].concat());
             equation_stack.push([vec![a * b], equation[2..].to_vec()].concat());
-            equation_stack
-              .push([vec![concat(a.clone(), b.clone())], equation[2..].to_vec()].concat());
+            if use_concat {
+              equation_stack
+                .push([vec![concat(a.clone(), b.clone())], equation[2..].to_vec()].concat());
+            }
           }
         }
       } else {
