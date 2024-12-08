@@ -150,6 +150,7 @@ impl Grid {
     }
   }
 
+  #[allow(dead_code)]
   fn to_string(&self) -> String {
     return self
       .values
