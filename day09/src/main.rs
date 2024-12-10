@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 fn main() {
   let input: Vec<u32> = std::fs::read_to_string("./input.txt")
@@ -51,17 +51,11 @@ fn p1(blocks: &mut Vec<Block>) -> usize {
 }
 
 fn p2(blocks: &mut Vec<Block>, block_sizes: &HashMap<usize, u32>) -> usize {
-  let mut attempts: HashSet<usize> = HashSet::new();
-  move_files(blocks, block_sizes, &mut attempts);
-
+  move_files(blocks, block_sizes);
   return compute_checksum(&blocks);
 }
 
-fn move_files(
-  blocks: &mut Vec<Block>,
-  block_sizes: &HashMap<usize, u32>,
-  swapped: &mut HashSet<usize>,
-) {
+fn move_files(blocks: &mut Vec<Block>, block_sizes: &HashMap<usize, u32>) {
   let mut j: i32 = blocks.len() as i32 - 1;
 
   while j > 0 {
@@ -71,11 +65,6 @@ fn move_files(
       .get(&end_block_id)
       .expect("block sizes at block id")
       .clone();
-
-    if swapped.contains(&end_block_id) {
-      j -= end_block_size as i32;
-      continue;
-    }
 
     if end_block.is_empty {
       j -= 1;
@@ -100,7 +89,6 @@ fn move_files(
       }
 
       if end_block_size <= free_space {
-        swapped.insert(end_block_id);
         for k in 0..end_block_size {
           blocks.swap(i + k as usize, j as usize - k as usize);
         }
