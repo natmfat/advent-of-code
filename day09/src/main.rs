@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
   let input: Vec<u32> = std::fs::read_to_string("./input.txt")
@@ -33,10 +33,12 @@ fn main() {
     block_sizes.insert(block_id, block_size);
   }
 
-  // println!("part 2 = {}", p2(&mut blocks, &block_sizes));
-  println!("part 1 = {}", p1(&mut blocks));
+  let mut blocks_clone = blocks.to_vec();
+  println!("part 1 = {}", p1(&mut blocks_clone));
+  println!("part 2 = {}", p2(&mut blocks, &block_sizes));
 }
 
+#[derive(Clone)]
 struct Block {
   id: usize,
   is_empty: bool,
@@ -44,54 +46,71 @@ struct Block {
 
 fn p1(blocks: &mut Vec<Block>) -> usize {
   move_blocks(blocks);
-  println!("{}", format_blocks(&blocks));
+  // println!("{}", format_blocks(&blocks));
   return compute_checksum(&blocks);
 }
 
 fn p2(blocks: &mut Vec<Block>, block_sizes: &HashMap<usize, u32>) -> usize {
-  println!("{}", format_blocks(&blocks));
-  move_files(blocks, block_sizes);
-  println!("{}", format_blocks(&blocks));
-  // move_blocks(blocks);
+  let mut attempts: HashSet<usize> = HashSet::new();
+  move_files(blocks, block_sizes, &mut attempts);
+
   return compute_checksum(&blocks);
 }
 
-fn move_files(blocks: &mut Vec<Block>, block_sizes: &HashMap<usize, u32>) {
-  let mut attempted: HashMap<usize, bool> = HashMap::new();
-  for i in 0..blocks.len() {
-    let curr = blocks.get(i).expect("current block at i");
-    if curr.is_empty {
-      // get available free space
+fn move_files(
+  blocks: &mut Vec<Block>,
+  block_sizes: &HashMap<usize, u32>,
+  swapped: &mut HashSet<usize>,
+) {
+  let mut j: i32 = blocks.len() as i32 - 1;
+
+  while j > 0 {
+    let end_block = blocks.get(j as usize).expect("non-empty block at j");
+    let end_block_id = end_block.id;
+    let end_block_size = block_sizes
+      .get(&end_block_id)
+      .expect("block sizes at block id")
+      .clone();
+
+    if swapped.contains(&end_block_id) {
+      j -= end_block_size as i32;
+      continue;
+    }
+
+    if end_block.is_empty {
+      j -= 1;
+      continue;
+    }
+
+    let mut i: usize = 0;
+    while i < j as usize {
+      let curr = blocks.get(i).expect("current block at i");
+      if !curr.is_empty {
+        i += 1;
+        continue;
+      }
+
       let mut free_space: u32 = 0;
-      for j in i..blocks.len() {
-        let block = blocks.get(j).expect("block at j");
-        if block.is_empty {
+      for k in i..blocks.len() {
+        if blocks.get(k).expect("block at k").is_empty {
           free_space += 1;
         } else {
           break;
         }
       }
 
-      // get non-empty block from end of blocks
-      for j in ((i + 1)..blocks.len()).rev() {
-        let block = blocks.get(j).expect("non-empty block at j");
-
-        // can we swap entire block?
-        if !block.is_empty && attempted.get(&block.id).is_none() {
-          attempted.insert(block.id, true);
-          let block_size = block_sizes
-            .get(&block.id)
-            .expect("block sizes at block id")
-            .clone();
-          if block_size <= free_space {
-            for k in 0..block_size {
-              blocks.swap(i + k as usize, j - k as usize);
-            }
-            break;
-          }
+      if end_block_size <= free_space {
+        swapped.insert(end_block_id);
+        for k in 0..end_block_size {
+          blocks.swap(i + k as usize, j as usize - k as usize);
         }
+        break;
       }
+
+      i += 1;
     }
+
+    j -= end_block_size as i32;
   }
 }
 
@@ -108,7 +127,7 @@ fn move_blocks(blocks: &mut Vec<Block>) {
     }
 
     // get non-empty block from end of blocks
-    if curr.is_empty && !block.is_empty {
+    if !block.is_empty {
       blocks.swap(i, j);
       i += 1;
     }
