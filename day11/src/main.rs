@@ -1,48 +1,66 @@
-use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
-use rayon::prelude::*;
 fn main() {
-  let mut numbers: Vec<u64> = std::fs::read_to_string("./input.txt")
+  let mut numbers: HashMap<u64, u64> = std::fs::read_to_string("./input.txt")
     .expect("input data")
     .split(" ")
     .map(|number| number.parse::<u64>().expect("parse string into u64"))
-    .collect();
+    .fold(HashMap::new(), |mut acc: HashMap<u64, u64>, number| {
+      acc.entry(number).and_modify(|n| *n += 1).or_insert(1);
+      acc
+    });
 
   for _ in 0..25 {
-    numbers = blink(&numbers);
+    numbers = blink(&mut numbers);
   }
-  println!("part 1 = {}", numbers.len());
+  println!("part 1 = {}", get_num_stones(&numbers));
 
-  for i in 0..50 {
-    numbers = blink(&numbers);
-    println!("finished {i}")
+  for _ in 0..50 {
+    numbers = blink(&mut numbers);
   }
-  println!("part 2 = {}", numbers.len());
+  println!("part 2 = {}", get_num_stones(&numbers));
 }
 
-fn blink(numbers: &Vec<u64>) -> Vec<u64> {
-  let blink_split: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
-  let mut blink_numbers: Vec<u64> = numbers
-    .par_iter()
-    .map(|curr| {
-      let curr = curr.clone();
-      if curr == 0 {
-        return 1;
-      } else {
-        let num_digits: i64 = f64::log10(curr as f64) as i64 + 1;
-        if num_digits % 2 == 0 {
-          let power = 10_f64.powi((num_digits / 2_i64) as i32) as u64;
-          let left_num = curr / power;
-          let right_num = curr - left_num * power;
-          blink_split.lock().unwrap().push(right_num);
-          return left_num;
-        } else {
-          return curr * 2024;
-        }
-      }
-    })
-    .collect();
+fn get_num_stones(numbers: &HashMap<u64, u64>) -> u64 {
+  let mut num_stones = 0;
+  for frequency in numbers.values() {
+    num_stones += frequency;
+  }
+  return num_stones;
+}
 
-  blink_numbers.extend(blink_split.lock().unwrap().to_vec());
-  return blink_numbers;
+fn blink(numbers: &mut HashMap<u64, u64>) -> HashMap<u64, u64> {
+  let mut next_numbers: HashMap<u64, u64> = HashMap::new();
+  for (number, frequency) in numbers.into_iter() {
+    let number = number.clone();
+    let frequency = frequency.clone();
+    if number == 0 {
+      next_numbers
+        .entry(1)
+        .and_modify(|n| *n += frequency)
+        .or_insert(frequency);
+      continue;
+    }
+
+    let num_digits: i64 = f64::log10(number as f64) as i64 + 1;
+    if num_digits % 2 == 0 {
+      let power = 10_f64.powi((num_digits / 2_i64) as i32) as u64;
+      let left_num = number / power;
+      let right_num = number - left_num * power;
+      next_numbers
+        .entry(left_num)
+        .and_modify(|n| *n += frequency)
+        .or_insert(frequency);
+      next_numbers
+        .entry(right_num)
+        .and_modify(|n| *n += frequency)
+        .or_insert(frequency);
+    } else {
+      next_numbers
+        .entry(number * 2024)
+        .and_modify(|n| *n += frequency)
+        .or_insert(frequency);
+    }
+  }
+  return next_numbers;
 }
